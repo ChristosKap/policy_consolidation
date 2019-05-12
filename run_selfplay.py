@@ -10,11 +10,19 @@ import robosumo
 from multiagent_monitor import MultiAgentMonitor
 
 
-def train(env_ids, num_timesteps, seed,load_path=None,cascade_depth=1,flow_factor=1,
-          mesh_factor=2.0,num_epochs=1,lr=3e-4,lr_decay=True,var_init='random',ent_coef=0.0,
-          imp_sampling='normal',imp_clips=[-5,5], dynamic_neglogpacs=False, full_kl=False, kl_beta=1.0,
-          separate_value=False, prox_value_fac=False, value_cascade=False,kl_type='fixed', adaptive_targ=None,targ_leeway=1.5,beta_mult_fac=2.0,traj_length=2048,cliprange=0.2,
-          nminibatches=32, lam=0.95, gamma=0.99,noptepochs=10,ncpu=1,vf_coef=1.0,reverse_kl=False,cross_kls=['new','new'],test_history=False, num_test_eps=30,save_interval=25,dense_decay=False):
+def train(env_ids, num_timesteps, seed, load_path=None, cascade_depth=1,
+          flow_factor=1, mesh_factor=2.0, num_epochs=1, lr=3e-4, 
+          lr_decay=True,var_init='random',ent_coef=0.0,
+          imp_sampling='normal',imp_clips=[-5,5],
+          dynamic_neglogpacs=False, full_kl=False, kl_beta=1.0,
+          separate_value=False, prox_value_fac=False,
+          value_cascade=False,kl_type='fixed', adaptive_targ=None,
+          targ_leeway=1.5, beta_mult_fac=2.0, traj_length=2048,
+          cliprange=0.2, nminibatches=32, lam=0.95, gamma=0.99,
+          noptepochs=10, ncpu=1, vf_coef=1.0, reverse_kl=False,
+          cross_kls=['new','new'],test_history=False, num_test_eps=30,
+          save_interval=25,dense_decay=False):
+
     from baselines.common import set_global_seeds
     from baselines.common.vec_env.vec_normalize import VecNormalize
     from baselines.ppo2 import ppo2
@@ -45,22 +53,30 @@ def train(env_ids, num_timesteps, seed,load_path=None,cascade_depth=1,flow_facto
     
     for epoch in range(num_epochs):
         env_id = env_ids[epoch%len(env_ids)]
-        env = SubprocVecEnv([lambda: make_env_from_id(env_id, seed + i if seed is not None else None,"") for i in range(ncpu)])
+        env = SubprocVecEnv([lambda: make_env_from_id(
+                    env_id, seed + i if seed is not None else None,"")
+                             for i in range(ncpu)])
         if test_history:
-            test_env = SubprocVecEnv([lambda: make_env_from_id(env_id, seed + i if seed is not None else None, "test_") for i in range(ncpu)])
+            test_env = SubprocVecEnv([lambda: make_env_from_id(
+                        env_id, seed + i if seed is not None else None, "test_")
+                                      for i in range(ncpu)])
         else:
             test_env=None
         
-        load_path,model=tc.learn_multi(policy=policy, env=env, nsteps=traj_length, nminibatches=nminibatches,
-                                 lam=lam, gamma=gamma, noptepochs=noptepochs, log_interval=1,
-                                 ent_coef=ent_coef, vf_coef=vf_coef,lr=lr, lr_decay = lr_decay, var_init=var_init,
-                                 cliprange=cliprange, imp_sampling = imp_sampling, imp_clips = imp_clips,
-                                 dynamic_neglogpacs=dynamic_neglogpacs, full_kl=full_kl, kl_beta=kl_beta,
-                                 separate_value=separate_value, prox_value_fac=prox_value_fac, value_cascade=value_cascade, kl_type=kl_type, reverse_kl=reverse_kl, cross_kls=cross_kls,
-                                 adaptive_targ=adaptive_targ, targ_leeway=targ_leeway, beta_mult_fac=beta_mult_fac, total_timesteps=num_timesteps,
-                                 save_interval=save_interval,
-                                 cascade_depth = cascade_depth, flow_factor = flow_factor,
-                                       mesh_factor = mesh_factor,load_path=load_path,prev_model=model, test_history=test_history,num_test_eps=num_test_eps,test_env=test_env, dense_decay=dense_decay)
+        load_path, model=tc.learn_multi(policy=policy, env=env, nsteps=traj_length, nminibatches=nminibatches,
+                                        lam=lam, gamma=gamma, noptepochs=noptepochs, log_interval=1,
+                                        ent_coef=ent_coef, vf_coef=vf_coef,lr=lr, lr_decay = lr_decay,
+                                        var_init=var_init, cliprange=cliprange, imp_sampling = imp_sampling,
+                                        imp_clips = imp_clips, dynamic_neglogpacs=dynamic_neglogpacs,
+                                        full_kl=full_kl, kl_beta=kl_beta, separate_value=separate_value,
+                                        prox_value_fac=prox_value_fac, value_cascade=value_cascade,
+                                        kl_type=kl_type, reverse_kl=reverse_kl, cross_kls=cross_kls,
+                                        adaptive_targ=adaptive_targ, targ_leeway=targ_leeway,
+                                        beta_mult_fac=beta_mult_fac, total_timesteps=num_timesteps,
+                                        save_interval=save_interval, cascade_depth = cascade_depth,
+                                        flow_factor = flow_factor, mesh_factor = mesh_factor,
+                                        load_path=load_path,prev_model=model, test_history=test_history,
+                                        num_test_eps=num_test_eps,test_env=test_env, dense_decay=dense_decay)
         
 
 def main():
@@ -112,14 +128,27 @@ def main():
     params['dense_decay'] = params['traj_length']*params['ncpu'] / (params['dense_decay_time_frac']*params['num_timesteps'])
     params['drawisloss'] = True # Set true to set reward for drawing equal to reward for losing
     
-    log_dir = './test_logs_depth'+str(params['cascade_depth'])+'_'+str(params['flow_factor'])+"flow_"+"lr"+str(params['lr'])+"{lrdecay}_".format(lrdecay="decay" if params['lr_decay'] else "")+params['var_init']+"_"+env_string+"_"+params['imp_sampling']+'_'+"{dynamic}_".format(dynamic='dynamic' if params['dynamic_neglogpacs'] else "")+"{full}_".format(full='full'+str(params['kl_beta'])+"_"+params['kl_type'] if params['full_kl'] else "clip"+str(params['cliprange']))+"{reverse}".format(reverse="_reverse" if params['reverse_kl'] else "")+"_"+"{adaptive}_".format(adaptive=str(params['adaptive_targ'])+'x'+str(params['targ_leeway'])+'x'+str(params['beta_mult_fac']) if params['kl_type']=='adaptive' else '')+"{sepval}_".format(sepval='sepval' if params['separate_value'] else "")+"_"+"{pvf}".format(pvf='pvf'+str(params['prox_value_fac']) if params['prox_value_fac'] else "")+"{val_casc}".format(val_casc='vcasc' if params['value_cascade'] else "")+"_vfcoef"+str(params['vf_coef'])+"_"+str(params['num_epochs'])+"x"+str(params['num_timesteps'])+"epochs"+str(params['traj_length'])+"x"+str(params['nminibatches'])+"x"+str(params['noptepochs'])+'_'+"seed"+str(params['seed'])+"_"+str(params['ncpu'])+"cpus"+"mesh"+str(params['mesh_factor'])+'_'+str(params['cross_kls'][0])+str(params['cross_kls'][1])+"_{test_hist}".format(test_hist="test"+str(params['save_interval'])+'x'+str(params['test_history'])+'x'+str(params['num_test_eps']) if params['test_history'] else "")+"{dense_decay}".format(dense_decay="_dd"+'%.2f'%params['dense_decay_time_frac'] if params['dense_decay'] else "")+"drawisloss"+"{loaded}".format(loaded='_loaded' if params['load_path'] else "")
-
+    log_dir = './test_dir'
     #logger.configure()
     logger.configure(dir=log_dir,format_strs=['stdout','csv'])
 
     pickle.dump(params,open(log_dir+'/params.pkl',"wb"))
     
-    train(params['env_names'], num_timesteps=params['num_timesteps'], seed=params['seed'],cascade_depth=params['cascade_depth'], flow_factor=params['flow_factor'], mesh_factor=params['mesh_factor'],load_path=params['load_path'],num_epochs=params['num_epochs'],lr=params['lr'],lr_decay=params['lr_decay'],var_init=params['var_init'],ent_coef=params['ent_coef'], imp_sampling=params['imp_sampling'], imp_clips = params['imp_clips'], dynamic_neglogpacs=params['dynamic_neglogpacs'], full_kl=params['full_kl'], separate_value=params['separate_value'], kl_beta=params['kl_beta'], kl_type=params['kl_type'], adaptive_targ=params['adaptive_targ'], traj_length=params['traj_length'],cliprange=params['cliprange'],nminibatches=params['nminibatches'],lam=params['lam'],gamma=params['gamma'],noptepochs=params['noptepochs'],targ_leeway=params['targ_leeway'],beta_mult_fac=params['beta_mult_fac'],ncpu=params['ncpu'],prox_value_fac=params['prox_value_fac'],value_cascade=params['value_cascade'],vf_coef=params['vf_coef'],reverse_kl=params['reverse_kl'],cross_kls=params['cross_kls'],test_history=params['test_history'],num_test_eps=params['num_test_eps'],save_interval=params['save_interval'],dense_decay=params['dense_decay'])
+    train(params['env_names'], num_timesteps=params['num_timesteps'], seed=params['seed'],
+          cascade_depth=params['cascade_depth'], flow_factor=params['flow_factor'],
+          mesh_factor=params['mesh_factor'],load_path=params['load_path'],
+          num_epochs=params['num_epochs'],lr=params['lr'],lr_decay=params['lr_decay'],
+          var_init=params['var_init'],ent_coef=params['ent_coef'], imp_sampling=params['imp_sampling'],
+          imp_clips = params['imp_clips'], dynamic_neglogpacs=params['dynamic_neglogpacs'],
+          full_kl=params['full_kl'], separate_value=params['separate_value'], kl_beta=params['kl_beta'],
+          kl_type=params['kl_type'], adaptive_targ=params['adaptive_targ'], traj_length=params['traj_length'],
+          cliprange=params['cliprange'],nminibatches=params['nminibatches'],lam=params['lam'],
+          gamma=params['gamma'],noptepochs=params['noptepochs'],targ_leeway=params['targ_leeway'],
+          beta_mult_fac=params['beta_mult_fac'],ncpu=params['ncpu'],prox_value_fac=params['prox_value_fac'],
+          value_cascade=params['value_cascade'],vf_coef=params['vf_coef'],reverse_kl=params['reverse_kl'],
+          cross_kls=params['cross_kls'],test_history=params['test_history'],num_test_eps=params['num_test_eps'],
+          save_interval=params['save_interval'],dense_decay=params['dense_decay'])
 
 if __name__ == '__main__':
     main()
+
